@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الخريطة التفاعلية للمناطق المتضررة</title>
+    <!-- إضافة مكتبة Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- إضافة أيقونات Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e6ef;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.2rem;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .map-container {
+            flex: 1;
+            min-width: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            height: 600px;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .control-panel {
+            flex-basis: 350px;
+            background-color: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+        
+        .section-title {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eaeaea;
+            font-size: 1.4rem;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eaeaea;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+        
+        .damage-high {
+            background-color: #e74c3c;
+        }
+        
+        .damage-medium {
+            background-color: #f39c12;
+        }
+        
+        .damage-low {
+            background-color: #2ecc71;
+        }
+        
+        .regions-list {
+            margin-top: 25px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        
+        .region-item {
+            background-color: #f9f9f9;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-right: 4px solid #3498db;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .region-item:hover {
+            background-color: #edf4fc;
+            transform: translateX(-5px);
+        }
+        
+        .region-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .region-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e6ef;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .control-panel {
+                width: 100%;
+            }
+        }
+        
+        /* تخصيص الخريطة للغة العربية */
+        .leaflet-control-zoom a {
+            font-family: Arial, sans-serif !important;
+        }
+        
+        .leaflet-popup-content {
+            text-align: right;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* تخصيص التمرير */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-map-marked-alt"></i> الخريطة التفاعلية للمناطق المتضررة</h1>
+            <p class="subtitle">أضف مناطق جديدة واعرض مستوى الضرر على الخريطة التفاعلية</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+            
+            <div class="control-panel">
+                <h2 class="section-title"><i class="fas fa-plus-circle"></i> إضافة منطقة متضررة جديدة</h2>
+                
+                <div class="form-group">
+                    <label for="regionName">اسم المنطقة:</label>
+                    <input type="text" id="regionName" placeholder="أدخل اسم المنطقة المتضررة">
+                </div>
+                
+                <div class="form-group">
+                    <label for="damageLevel">مستوى الضرر:</label>
+                    <select id="damageLevel">
+                        <option value="high">مرتفع</option>
+                        <option value="medium">متوسط</option>
+                        <option value="low">منخفض</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regionType">نوع المنطقة:</label>
+                    <select id="regionType">
+                        <option value="residential">سكنية</option>
+                        <option value="commercial">تجارية</option>
+                        <option value="agricultural">زراعية</option>
+                        <option value="industrial">صناعية</option>
+                        <option value="infrastructure">بنية تحتية</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="coordinates">الإحداثيات (خط الطول، خط العرض):</label>
+                    <input type="text" id="coordinates" placeholder="مثال: 24.7136, 46.6753" value="24.7136, 46.6753">
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">وصف الضرر:</label>
+                    <textarea id="description" rows="3" placeholder="أدخل وصفًا للضرر في المنطقة..."></textarea>
+                </div>
+                
+                <button class="btn" id="addRegionBtn">
+                    <i class="fas fa-map-marker-alt"></i> إضافة منطقة إلى الخريطة
+                </button>
+                
+                <button class="btn btn-danger" id="clearRegionsBtn">
+                    <i class="fas fa-trash-alt"></i> حذف جميع المناطق
+                </button>
+                
+                <div class="legend">
+                    <h3 class="section-title"><i class="fas fa-key"></i> مفتاح الألوان</h3>
+                    <div class="legend-item">
+                        <div class="legend-color damage-high"></div>
+                        <span>ضرر مرتفع</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color damage-medium"></div>
+                        <span>ضرر متوسط</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color damage-low"></div>
+                        <span>ضرر منخفض</span>
+                    </div>
+                </div>
+                
+                <div class="regions-list">
+                    <h3 class="section-title"><i class="fas fa-list"></i> المناطق المضافة</h3>
+                    <div id="regionsContainer">
+                        <!-- سيتم عرض المناطق هنا -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>جميع الحقوق محفوظة &copy; 2023 - الخريطة التفاعلية للمناطق المتضررة</p>
+            <p>يمكنك النقر على أي علامة على الخريطة لرؤية تفاصيل المنطقة</p>
+        </div>
+    </div>
+
+    <!-- إضافة مكتبة Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // تهيئة الخريطة
+        const map = L.map('map').setView([24.7136, 46.6753], 5); // مركز على السعودية
+        
+        // إضافة طبقة الخريطة من OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18
+        }).addTo(map);
+        
+        // مصفوفة لتخزين المناطق المتضررة
+        let affectedRegions = [];
+        
+        // عناصر DOM
+        const regionNameInput = document.getElementById('regionName');
+        const damageLevelSelect = document.getElementById('damageLevel');
+        const regionTypeSelect = document.getElementById('regionType');
+        const coordinatesInput = document.getElementById('coordinates');
+        const descriptionInput = document.getElementById('description');
+        const addRegionBtn = document.getElementById('addRegionBtn');
+        const clearRegionsBtn = document.getElementById('clearRegionsBtn');
+        const regionsContainer = document.getElementById('regionsContainer');
+        
+        // ألوان العلامات حسب مستوى الضرر
+        const damageColors = {
+            high: '#e74c3c',
+            medium: '#f39c12',
+            low: '#2ecc71'
+        };
+        
+        // أسماء مستويات الضرر بالعربية
+        const damageLevelNames = {
+            high: 'مرتفع',
+            medium: 'متوسط',
+            low: 'منخفض'
+        };
+        
+        // أسماء أنواع المناطق بالعربية
+        const regionTypeNames = {
+            residential: 'سكنية',
+            commercial: 'تجارية',
+            agricultural: 'زراعية',
+            industrial: 'صناعية',
+            infrastructure: 'بنية تحتية'
+        };
+        
+        // دالة لإضافة منطقة جديدة
+        function addRegion() {
+            // الحصول على القيم من النموذج
+            const name = regionNameInput.value.trim();
+            const damageLevel = damageLevelSelect.value;
+            const regionType = regionTypeSelect.value;
+            const coordinates = coordinatesInput.value.trim();
+            const description = descriptionInput.value.trim();
+            
+            // التحقق من صحة البيانات
+            if (!name) {
+                alert('الرجاء إدخال اسم المنطقة');
+                return;
+            }
+            
+            if (!coordinates) {
+                alert('الرجاء إدخال إحداثيات المنطقة');
+                return;
+            }
+            
+            // تحليل الإحداثيات
+            const coords = coordinates.split(',').map(coord => parseFloat(coord.trim()));
+            
+            if (coords.length !== 2 || isNaN(coords[0]) || isNaN(coords[1])) {
+                alert('الرجاء إدخال إحداثيات صحيحة (مثال: 24.7136, 46.6753)');
+                return;
+            }
+            
+            // إنشاء كائن المنطقة
+            const region = {
+                id: Date.now(), // استخدام الطابع الزمني كمعرف فريد
+                name,
+                damageLevel,
+                regionType,
+                coordinates: coords,
+                description,
+                dateAdded: new Date().toLocaleDateString('ar-SA')
+            };
+            
+            // إضافة المنطقة إلى المصفوفة
+            affectedRegions.push(region);
+            
+            // تحديث الخريطة والقائمة
+            updateMap();
+            updateRegionsList();
+            
+            // إعادة تعيين النموذج
+            resetForm();
+            
+            // التمرير إلى المنطقة المضافة على الخريطة
+            map.setView(coords, 10);
+        }
+        
+        // دالة لتحديث الخريطة
+        function updateMap() {
+            // إزالة جميع العلامات الحالية
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            // إضافة علامة لكل منطقة
+            affectedRegions.forEach(region => {
+                // تحديد لون العلامة بناءً على مستوى الضرر
+                const markerColor = damageColors[region.damageLevel];
+                
+                // إنشاء علامة مخصصة
+                const customIcon = L.divIcon({
+                    html: `<div style="background-color: ${markerColor}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
+                    className: 'custom-marker',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+                
+                // إضافة العلامة إلى الخريطة
+                const marker = L.marker(region.coordinates, { icon: customIcon })
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="text-align: right; min-width: 200px;">
+                            <h3 style="margin-bottom: 8px; color: #2c3e50;">${region.name}</h3>
+                            <p><strong>مستوى الضرر:</strong> <span style="color: ${markerColor}">${damageLevelNames[region.damageLevel]}</span></p>
+                            <p><strong>نوع المنطقة:</strong> ${regionTypeNames[region.regionType]}</p>
+                            <p><strong>تاريخ الإضافة:</strong> ${region.dateAdded}</p>
+                            <p><strong>الوصف:</strong> ${region.description || 'لا يوجد وصف'}</p>
+                            <p><strong>الإحداثيات:</strong> ${region.coordinates[0].toFixed(4)}, ${region.coordinates[1].toFixed(4)}</p>
+                            <button onclick="removeRegion(${region.id})" style="background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-top: 10px; width: 100%;">حذف هذه المنطقة</button>
+                        </div>
+                    `);
+            });
+        }
+        
+        // دالة لتحديث قائمة المناطق
+        function updateRegionsList() {
+            // مسح المحتوى الحالي
+            regionsContainer.innerHTML = '';
+            
+            // إضافة كل منطقة إلى القائمة
+            affectedRegions.forEach(region => {
+                const regionElement = document.createElement('div');
+                regionElement.className = 'region-item';
+                regionElement.innerHTML = `
+                    <div class="region-name">${region.name}</div>
+                    <div class="region-details">
+                        <span>${damageLevelNames[region.damageLevel]}</span>
+                        <span>${region.dateAdded}</span>
+                    </div>
+                `;
+                
+                // عند النقر على المنطقة في القائمة، التمرير إليها على الخريطة
+                regionElement.addEventListener('click', () => {
+                    map.setView(region.coordinates, 12);
+                    
+                    // فتح النافذة المنبثقة للعلامة
+                    map.eachLayer(layer => {
+                        if (layer instanceof L.Marker && 
+                            layer.getLatLng().lat === region.coordinates[0] && 
+                            layer.getLatLng().lng === region.coordinates[1]) {
+                            layer.openPopup();
+                        }
+                    });
+                });
+                
+                regionsContainer.appendChild(regionElement);
+            });
+            
+            // إذا لم تكن هناك مناطق، عرض رسالة
+            if (affectedRegions.length === 0) {
+                regionsContainer.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 20px;">لا توجد مناطق مضافة بعد</p>';
+            }
+        }
+        
+        // دالة لإزالة منطقة
+        function removeRegion(id) {
+            // إزالة المنطقة من المصفوفة
+            affectedRegions = affectedRegions.filter(region => region.id !== id);
+            
+            // تحديث الخريطة والقائمة
+            updateMap();
+            updateRegionsList();
+        }
+        
+        // دالة لإعادة تعيين النموذج
+        function resetForm() {
+            regionNameInput.value = '';
+            damageLevelSelect.value = 'high';
+            regionTypeSelect.value = 'residential';
+            coordinatesInput.value = '24.7136, 46.6753';
+            descriptionInput.value = '';
+            regionNameInput.focus();
+        }
+        
+        // دالة لحذف جميع المناطق
+        function clearAllRegions() {
+            if (affectedRegions.length === 0) {
+                alert('لا توجد مناطق لحذفها');
+                return;
+            }
+            
+            if (confirm('هل أنت متأكد من حذف جميع المناطق؟')) {
+                affectedRegions = [];
+                updateMap();
+                updateRegionsList();
+            }
+        }
+        
+        // إضافة بعض المناطق الافتراضية
+        function addDefaultRegions() {
+            const defaultRegions = [
+                {
+                    id: 1,
+                    name: 'منطقة الرياض - حي النخيل',
+                    damageLevel: 'high',
+                    regionType: 'residential',
+                    coordinates: [24.7136, 46.6753],
+                    description: 'أضرار في المباني السكنية بسبب الفيضانات',
+                    dateAdded: '2023-10-15'
+                },
+                {
+                    id: 2,
+                    name: 'جدة - المنطقة الصناعية',
+                    damageLevel: 'medium',
+                    regionType: 'industrial',
+                    coordinates: [21.5433, 39.1728],
+                    description: 'أضرار في المصانع بسبب الحريق',
+                    dateAdded: '2023-10-10'
+                },
+                {
+                    id: 3,
+                    name: 'الدمام - الميناء',
+                    damageLevel: 'low',
+                    regionType: 'infrastructure',
+                    coordinates: [26.4207, 50.0888],
+                    description: 'أضرار طفيفة في البنية التحتية للميناء',
+                    dateAdded: '2023-10-05'
+                }
+            ];
+            
+            affectedRegions = defaultRegions;
+            updateMap();
+            updateRegionsList();
+        }
+        
+        // إضافة مستمعي الأحداث
+        addRegionBtn.addEventListener('click', addRegion);
+        clearRegionsBtn.addEventListener('click', clearAllRegions);
+        
+        // إضافة مناطق افتراضية عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+            addDefaultRegions();
+        });
+    </script>
+</body>
+</html>
